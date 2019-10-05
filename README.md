@@ -65,11 +65,24 @@ This image should also work on Windows devices as the image itself is multi plat
 The firmware update is applied automatically one the container is started for the first time. However, if the update failed or you want to force an additional update, just delete the `firmware_updated` file in your shared data folder.
 
 ## Full stack example
-The following example shows how I compose my Smart Home stack. I'm running [Home Assistant](https://www.home-assistant.io/) which connects which variaos hardware platforms as well as with out HmIP daemon. Home Assistant provides a great user experiance, a big community and also allows me to expose all my non-supported devices to Apple Home. For automations, I love to use [Appdaemon](https://appdaemon.readthedocs.io/en/latest/) which allows you to create automations in code. I've also written a [tiny docker image](https://github.com/Horizon0156/docker-appdaemon) that shippes Appdaemon decoupled from the Home Assistant instance.
+The following example shows how I compose my Smart Home stack. I'm running [Home Assistant](https://www.home-assistant.io/) which connects to variaos hardware platforms as well as to our HmIP daemon. Home Assistant provides a great user experiance, a big community and also allows me to expose all my non-supported devices to Apple Home. For automations, I love to use [Node-RED](https://nodered.org/) which allows you to create automation flows and even use code for more complex operations.
 
-```
-version: '3'
+![Example](https://i.ibb.co/NsYD9vx/Unbenannt.jpg)
+
+The compose script deploys all the required services, enables persistance of our configuration directories and sets up the network and timezone configuration. 
+
+```version: '3'
 services:
+  ccu:
+    container_name: ccu
+    image: occu-hmip
+    volumes:
+      - ~/smart-home/ccu:/data
+    restart: always
+    devices:
+      - "/dev/ttyUSB0:/dev/ttyUSB0"
+    ports:
+      - "2010:2010"
   homeassistant:
     container_name: homeassistant
     image: homeassistant/raspberrypi3-homeassistant:stable
@@ -78,26 +91,15 @@ services:
     environment:
       - TZ=Europe/Berlin
     volumes:
-      - ~/smart-home/ha_data:/config
-  ccu:
-    container_name: ccu
-    image: occu-hmip
-    volumes:
-      - ~/smart-home/ccu_data:/data
-    restart: always
-    devices:
-      - "/dev/ttyUSB0:/dev/ttyUSB0"
-    ports:
-      - "2010:2010"
-  appdeamon:
-    container_name: appdeamon
-    image: appdeamon
+      - ~/smart-home/homeassistant:/config
+  node-red:
+    container_name: node-red
+    image: nodered/node-red
     restart: always
     ports:
-      - "5050:5050"
+      - "1880:1880"
     environment:
       - TZ=Europe/Berlin
     volumes:
-      - ~/smart-home/appdeamon_data:/config
-
+      - ~/smart-home/node-red:/data
 ```
