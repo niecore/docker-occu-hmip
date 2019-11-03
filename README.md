@@ -1,13 +1,21 @@
 # Docker OCCU (homematicIP)
 ![Logo](https://www.homematic-ip.com/downloads/hmip/grafik/logo.png)
 
-This docker images provides a lightweight image for running a [homematicIP](https://www.homematic-ip.com) daemon (ReGaLess CCU).
-
-As no WebUI is hosted, the management and integration of homematicIP devices is only possible by communicating with the XmlRPC interface. There are 3rd party tools available that allow you to  conveniently manage your "headless CCU". [Homematic Manager](https://github.com/hobbyquaker/homematic-manager) is a very good one.
+This docker images provides a lightweight image for running a [homematicIP](https://www.homematic-ip.com) daemon including a working CCU Webinterface (ReGaHss).
 
 The image is build on top of the [OCCU SDK](https://github.com/eq-3/occu). Device data is persisted to the _/data_ directory. The creation of a shared mount or volume is advised.
 
 This image is optimized to be used with the [HmIP RF-USB](https://de.elv.com/elv-homematic-ip-arr-bausatz-rf-usb-stick-fuer-alternative-steuerungsplattformen-hmip-rfusb-fuer-smart-home-hausautomation-152306) stick as this device can be passed to the container without any kernel patches on the host. If you need to communicate with a PCB device connected to the Raspberry's GPIO, please check out Alex's [piVCCU](https://github.com/alexreinert/piVCCU) project. 
+
+The image also provides access to the Homematic ReGaHss / WebUI. Therefore, it's an ease to pair and manage your devices and provides the same user experiance than a common CCU3.
+
+What's currently not supported:
+* Backup and Restore snapshots from the CCU
+* Modifying Time or Location settings
+* Modifying Network settings
+* Accessing CCU Management (Zentralenwartung) for updating or rebooting the CCU.
+
+However, all of these topics are managed by the Docker host and must not be configured from the CCU directly. Therefore, I will not focus on enabling those features. Nevertheless, any contribution is appreciated. 
 
 ## How to build
 
@@ -16,6 +24,7 @@ This image is optimized to be used with the [HmIP RF-USB](https://de.elv.com/elv
 |--|--|--|
 |OCCU_VERSION|3.47.10|Sets the OCCU version that will be downloaded and installed. Check https://github.com/eq-3/occu/releases for possible values. |
 |HMIP_RFUSB_VERSION|2.8.6|Sets the version of the HmIP RF-USB firmware as the update requires the version to be part of the filename. |
+|ARCH_DIRECTORY|arm-gnueabihf|Sets the architecture directory used when extracting the binaries from the OCCU SDK. Supported values are `arm-gnueabihf` and `X86_32_Debian_Wheezy`. Use `arm-gnueabihf` for ARM based devices like a Raspberry PI and `X86_32_Debian_Wheezy` for a x86 based system. |
 
 ```
 docker build --tag occu-hmip .
@@ -27,6 +36,8 @@ As already mentioned it's advised to map the persisted data folder to a shared f
 ```
 docker run -d -v <<PATH TO STORAGE>>:/data -p 2010:2010 --device=/dev/ttyUSB0:/dev/ttyUSB0 --name ccu occu-hmip
 ```
+
+To adjust the timezone of your CCU instance, simply provice a TZ environment parameter or mount your local system's timezone files. (See full stack example below.)
 
 ### Changing the USB port
 If your device is running on a different port, you have to adjust the `crRFD.conf` as well as the `run.sh` script in order to launch the daemon and to update the firmware. After the adjustment, the image has to be rebuild.
@@ -71,18 +82,23 @@ The following example shows how I compose my Smart Home stack. I'm running [Home
 
 The compose script deploys all the required services, enables persistance of our configuration directories and sets up the network and timezone configuration. 
 
-```version: '3'
+
+```
+version: '3'
 services:
-  ccu:
-    container_name: ccu
+  occu:
+    container_name: occu-hmip
     image: occu-hmip
     volumes:
-      - ~/smart-home/ccu:/data
+      - ~/smart-home/occu:/data
     restart: always
     devices:
       - "/dev/ttyUSB0:/dev/ttyUSB0"
+    environment:
+      - TZ=Europe/Berlin
     ports:
       - "2010:2010"
+      - "8124:80"
   homeassistant:
     container_name: homeassistant
     image: homeassistant/raspberrypi3-homeassistant:stable

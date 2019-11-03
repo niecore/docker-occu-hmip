@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# Initialise data folder
-mkdir -p /share/hmip-firmware
+# Initialise data & firmware folders
 mkdir -p /data/crRFD
 
 function updateHmIPFirmware() {
@@ -34,5 +33,14 @@ if [ ! -f /data/hmip_address.conf ]; then
     cp -f /etc/config/hmip_address.conf /data/
 fi
 
-# Keep container running while CCU is alive
-wait ${CCU_PID}
+# Start WebUI / ReGaHss
+sleep 30
+
+"$HM_HOME/bin/ReGaHss.community" -f /etc/config/rega.conf &
+REGA_PID=$!
+
+lighttpd-angel -D -f /opt/hm/etc/lighttpd/lighttpd.conf &
+WEBSERVER_PID=$!
+
+# Keep container running while CCU services are alive
+wait ${CCU_PID} ${REGA_PID} ${WEBSERVER_PID}
