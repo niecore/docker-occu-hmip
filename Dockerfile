@@ -14,8 +14,8 @@ ARG ARCH_DIRECTORY=arm-gnueabihf
 
 # Install OCCU / HMIP deamon
 WORKDIR /usr/src
-RUN curl -SL https://github.com/eq-3/occu/archive/${OCCU_VERSION}.tar.gz | tar xzf - 
-RUN cd occu-${OCCU_VERSION} \
+RUN curl -SL https://github.com/eq-3/occu/archive/${OCCU_VERSION}.tar.gz | tar xzf - \
+    && cd occu-${OCCU_VERSION} \
     && mkdir -p /opt/hm \
     && cp -r firmware / \
     && cp -r HMserver/* / \
