@@ -30,4 +30,4 @@ jobs:
           --platform linux/arm,linux/amd64 \
           --tag horizon0156/occu-hmip:latest \
           --tag horizon0156/occu-hmip:${{GITHUB_REF}} \
-          --push \
+          --push
