@@ -1,3 +1,5 @@
+![Continious Integration](https://github.com/Horizon0156/docker-occu-hmip/workflows/Continious%20Integration/badge.svg)
+
 # Docker OCCU (homematicIP)
 ![Logo](https://www.homematic-ip.com/downloads/hmip/grafik/logo.png)
 
