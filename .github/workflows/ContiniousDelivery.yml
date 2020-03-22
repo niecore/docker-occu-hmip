@@ -29,5 +29,5 @@ jobs:
         docker buildx build . \
           --platform linux/arm,linux/amd64 \
           --tag horizon0156/occu-hmip:latest \
-          --tag horizon0156/occu-hmip:$GITHUB_REF \
+          --tag horizon0156/occu-hmip:${GITHUB_REF##*/} \
           --push
