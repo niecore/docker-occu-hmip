@@ -20,7 +20,7 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
     - name: Login at Docker Hub
-      run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_TOKEN }}
+      run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
     - name: Set up Buildx
       id: buildx
       uses: crazy-max/ghaction-docker-buildx@v1
@@ -28,8 +28,7 @@ jobs:
         version: latest
     - name: Build images
       run: |
-        docker buildx build \
-          --platform linux/arm, linux/amd64 \
-          --push \
+        docker buildx build . \
+          --platform linux/arm,linux/amd64 \
           --tag horizon0156/occu-hmip:dev \
-          .
+          --push \
