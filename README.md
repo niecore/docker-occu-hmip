@@ -1,57 +1,51 @@
 # Docker OCCU (homematicIP)
 ![Logo](https://www.homematic-ip.com/downloads/hmip/grafik/logo.png)
 
-This docker images provides a lightweight image for running a [homematicIP](https://www.homematic-ip.com) daemon including a working CCU Webinterface (ReGaHss).
+This docker images provides a lightweight image for running a [homematicIP](https://www.homematic-ip.com) daemon.
 
 The image is build on top of the [OCCU SDK](https://github.com/eq-3/occu). Device data is persisted to the _/data_ directory. The creation of a shared mount or volume is advised.
 
 This image is optimized to be used with the [HmIP RF-USB](https://de.elv.com/elv-homematic-ip-arr-bausatz-rf-usb-stick-fuer-alternative-steuerungsplattformen-hmip-rfusb-fuer-smart-home-hausautomation-152306) stick as this device can be passed to the container without any kernel patches on the host. If you need to communicate with a PCB device connected to the Raspberry's GPIO, please check out Alex's [piVCCU](https://github.com/alexreinert/piVCCU) project. 
 
-The image also provides access to the Homematic ReGaHss / WebUI. Therefore, it's an ease to pair and manage your devices and provides the same user experiance than a common CCU3.
-
-What's currently not supported:
-* Backup and Restore snapshots from the CCU
-* Modifying Time or Location settings
-* Modifying Network settings
-* Accessing CCU Management (Zentralenwartung) for updating or rebooting the CCU.
-
-However, all of these topics are managed by the Docker host and must not be configured from the CCU directly. Therefore, I will not focus on enabling those features. Nevertheless, any contribution is appreciated. 
-
-## How to build
-
-### Build Parameter
-| Argument | Default Value | Description
-|--|--|--|
-|OCCU_VERSION|3.47.10|Sets the OCCU version that will be downloaded and installed. Check https://github.com/eq-3/occu/releases for possible values. |
-|HMIP_RFUSB_VERSION|2.8.6|Sets the version of the HmIP RF-USB firmware as the update requires the version to be part of the filename. |
-|ARCH_DIRECTORY|arm-gnueabihf|Sets the architecture directory used when extracting the binaries from the OCCU SDK. Supported values are `arm-gnueabihf` and `X86_32_Debian_Wheezy`. Use `arm-gnueabihf` for ARM based devices like a Raspberry PI and `X86_32_Debian_Wheezy` for a x86 based system. |
-
-```
-docker build --tag occu-hmip .
-```
+To keep the image as small as possible, the latest version only provides access to the Homematic IP Daemon . Sebastian Raff provided a great tool for managing headless installations, called [Homematic Manager](https://github.com/hobbyquaker/homematic-manager). If you want to make use of the original webinterface with limited functionality, you can check out the legacy branch `occu_rega` and build the image on your own.
 
 ## How to run
-As already mentioned it's advised to map the persisted data folder to a shared folder or volume. Otherwise you will loose all your paired devices on a container reboot. In addition you need to share the USB device so the container can communicate with the device.
+You can find a prebuild, multi-arch image on [DockerHub](https://hub.docker.com/r/horizon0156/occu-hmip). As already mentioned it's advised to map the persisted data folder to a shared folder or volume. Otherwise you will loose all your paired devices on a container reboot. In addition you need to share the USB device so the container can communicate with the device.
 
 ```
-docker run -d -v <<PATH TO STORAGE>>:/data -p 2010:2010 --device=/dev/ttyUSB0:/dev/ttyUSB0 --name ccu occu-hmip
+docker run -d -v <<PATH TO STORAGE>>:/data -p 2010:2010 --device=/dev/ttyUSB0:/dev/ttyUSB0 --name ccu horizon0156/occu-hmip
 ```
 
 To adjust the timezone of your CCU instance, simply provice a TZ environment parameter or mount your local system's timezone files. (See full stack example below.)
 
 ### Changing the USB port
-If your device is running on a different port, you have to adjust the `crRFD.conf` as well as the `run.sh` script in order to launch the daemon and to update the firmware. After the adjustment, the image has to be rebuild.
+If your device is running on a different port, you have to adjust the `crRFD.conf` in your config folder. 
 
 _data/crRFD.conf_
 ```
 34  Adapter.1.Port=/dev/ttyUSB0
 ```
 
+If you also need to update the firmware of your USB dongle, the `run.sh` script needs to be changed as well. You can fire up a terminal in your running the container and change the file located ad `/run.sh` accordignly. To persist this operation, the source needs to be changes which requires the image to be [rebuild](#how-to-build-manually).
+
 _data/run.sh_
 ```
 11  if [ ! -f /data/firmware_updated ]; then
 12      java -Xmx64m -jar /opt/HmIP/hmip-copro-update.jar -p /dev/ttyUSB0 -f "${UPDATE_FILE}"
 ```
+
+## How to build manually
+Simply execute Docker's build command. Change of the default build parameter if required.
+
+```
+docker build --tag occu-hmip .
+```
+
+### Build Parameter
+| Argument | Default Value | Description
+|--|--|--|
+|OCCU_VERSION|3.47.10|Sets the OCCU version that will be downloaded and installed. Check https://github.com/eq-3/occu/releases for possible values. |
+|HMIP_RFUSB_VERSION|2.8.6|Sets the version of the HmIP RF-USB firmware as the update requires the version to be part of the filename. |
 
 ## USB Driver
 If the USB device is not available on your host system, you probably need to load the driver for the USB serial converter. 
@@ -76,12 +70,9 @@ This image should also work on Windows devices as the image itself is multi plat
 The firmware update is applied automatically one the container is started for the first time. However, if the update failed or you want to force an additional update, just delete the `firmware_updated` file in your shared data folder.
 
 ## Full stack example
-The following example shows how I compose my Smart Home stack. I'm running [Home Assistant](https://www.home-assistant.io/) which connects to variaos hardware platforms as well as to our HmIP daemon. Home Assistant provides a great user experiance, a big community and also allows me to expose all my non-supported devices to Apple Home. For automations, I love to use [Node-RED](https://nodered.org/) which allows you to create automation flows and even use code for more complex operations.
-
-![Example](https://i.ibb.co/NsYD9vx/Unbenannt.jpg)
+The following example shows how I compose my Smart Home stack. I'm running [Home Assistant](https://www.home-assistant.io/) which connects to variaos hardware platforms as well as to our HmIP daemon. Home Assistant provides a great user experiance, a big community and also allows me to expose all my non-supported devices to Apple Home. 
 
 The compose script deploys all the required services, enables persistance of our configuration directories and sets up the network and timezone configuration. 
-
 
 ```
 version: '3'
@@ -108,14 +99,4 @@ services:
       - TZ=Europe/Berlin
     volumes:
       - ~/smart-home/homeassistant:/config
-  node-red:
-    container_name: node-red
-    image: nodered/node-red
-    restart: always
-    ports:
-      - "1880:1880"
-    environment:
-      - TZ=Europe/Berlin
-    volumes:
-      - ~/smart-home/node-red:/data
 ```
