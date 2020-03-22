@@ -13,7 +13,11 @@ To keep the image as small as possible, the latest version only provides access 
 You can find a prebuild, multi-arch image on [DockerHub](https://hub.docker.com/r/horizon0156/occu-hmip). As already mentioned it's advised to map the persisted data folder to a shared folder or volume. Otherwise you will loose all your paired devices on a container reboot. In addition you need to share the USB device so the container can communicate with the device.
 
 ```
-docker run -d -v <<PATH TO STORAGE>>:/data -p 2010:2010 --device=/dev/ttyUSB0:/dev/ttyUSB0 --name ccu horizon0156/occu-hmip
+docker run -d \
+  -v <<PATH TO STORAGE>>:/data \
+  -p 2010:2010 \
+  --device=/dev/ttyUSB0:/dev/ttyUSB0 \
+  --name ccu horizon0156/occu-hmip
 ```
 
 To adjust the timezone of your CCU instance, simply provice a TZ environment parameter or mount your local system's timezone files. (See full stack example below.)
