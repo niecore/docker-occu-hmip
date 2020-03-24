@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<interfaces v="1.0">
+	<ipc>
+	 	<name>HmIP-RF</name>
+	 	<url>xmlrpc://127.0.0.1:2010</url>
+	 	<info>HmIP-RF</info>
+	</ipc>
+</interfaces>
