@@ -30,9 +30,6 @@ ENV HM_HOME=/opt/hm LD_LIBRARY_PATH=/opt/hm/lib:${LD_LIBRARY_PATH}
 # Update config files
 COPY data/crRFD.conf data/log4j.xml data/InterfacesList.xml /etc/config/
 
-# Update device description files
-COPY data/descriptions /etc/descriptions
-
 # Copy scripts
 COPY data/run.sh /
 
